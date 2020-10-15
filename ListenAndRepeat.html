@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Listen and Repeat</title>
+		<script src="jspsych-6.1/jspsych.js"></script>
+		<script src="jspsych-6.1/plugins/jspsych-audio-keyboard-response.js"></script>
+		<script src="jspsych-6.1/plugins/jspsych-html-button-response.js"></script>
+		<script src="jspsych-6.1/plugins/jspsych-html-keyboard-response.js"></script>
+		<script src="jspsych-6.1/plugins/jspsych-instructions.js"></script>
+		<link href="jspsych-6.1/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+
+		<meta charset="UTF-8">
+	</head>
+	<body></body>
+	<script>
+
+		const trialNumberStyle = '"text-align:center;font-size:24px;position:fixed; left:80vw; top: 70vh;transform: translate(-50%, -50%)"';
+		const experimentEndStyle = '"text-align:center;font-size:24px;position:fixed; left:50vw; top: 50vh;transform: translate(-50%, -50%)"';
+
+		//Timeline:
+		//  Choose experimental file (or pull name from URL, ?sequence='xx')
+		//  Load experimental sequence
+		//  Iterate through trials in experimental sequence
+		//  Write diagnostic data to unique file
+
+		//Load the experimental file based on the URLSearchParams,
+		//Gate progress against finding a valid file name
+		const queryString = window.location.search;
+		const urlParams = new URLSearchParams(queryString);
+		const sequenceName = urlParams.get('sequence');
+		console.log(sequenceName);
+
+		//TODO: if sequence isn't set display instructions to add a sequence file query to the URL
+
+		const sequenceFilePath = "ExperimentSequences/" + sequenceName + ".txt";
+		console.log(sequenceFilePath);
+
+		//This GET request will work locally only if you are running a local web
+		//server to handle the request, JS by default doesn't let you get local files
+		//as that could be a major security issue.
+		var sequenceFileRequest = new XMLHttpRequest();
+		sequenceFileRequest.open("GET", sequenceFilePath,false);
+		sequenceFileRequest.send();
+		const sequenceText = sequenceFileRequest.responseText;
+		console.log(sequenceText)
+
+		const sequence = sequenceText.trim().split('\n');
+
+		//Go through the file sequence and add an audio-keyboard-response object for each file
+		var experimentTimeline = [];
+
+		var instructionScreen = {
+			type: 'instructions',
+			pages: [
+				'<br>You will hear words that are hard to understand.',
+				'<br>Listen to each word and do your best to repeat back what you heard.',
+				'<br>Some words will be harder than others. It is okay to guess.',
+				'Now the examiner will turn off their microphone and video so you can focus.<br>They can still hear you if you have a question.',
+				'<br>Click Next to hear the first word.'
+				],
+			show_clickable_nav: true
+		}
+
+		experimentTimeline = experimentTimeline.concat(instructionScreen)
+
+		var trialIndex = 0;
+		for (trialIndex = 0; trialIndex < sequence.length; trialIndex++)
+		{
+			//This is a bit of a hack, each 'trial' has two elements,
+			//One that plays the sound file and an empty wait for click
+			//to advance. This prevents subejcts from advancing the experiment
+			//in the middle of a stimulus
+			var soundTrial = {
+				type: 'audio-keyboard-response',
+				stimulus: sequence[trialIndex],
+				autoplay: true,
+				response_ends_trial: false,
+				trial_ends_after_audio: true,
+				prompt: '<p style = ' + trialNumberStyle + '>' + (trialIndex + 1) + " of " + sequence.length + "</p>",
+			}
+			experimentTimeline = experimentTimeline.concat(soundTrial);
+
+			if(trialIndex < sequence.length-1)
+			{
+				var waitForClick = {
+					type: 'html-button-response',
+					stimulus:"<p>Say what you thought you heard</p>" 
+						 + '<p style = ' + trialNumberStyle + '>' + (trialIndex + 1) + " of " + sequence.length + "</p>",
+					choices:['Click to play the next word']
+				}
+				experimentTimeline = experimentTimeline.concat(waitForClick);
+			} else {
+				var sequenceFinishedText = {
+					type: 'html-button-response',
+					stimulus: "<p>Say what you thought you heard</p>" 
+						 + '<p style = ' + trialNumberStyle + '>' + (trialIndex + 1) + " of " + sequence.length + "</p>",
+					choices:['Click to end the experiment']
+				}
+				experimentTimeline = experimentTimeline.concat(sequenceFinishedText);
+			}
+		}
+
+		jsPsych.init({
+			timeline: experimentTimeline,
+			preload: sequence,
+			on_finish: function() {
+				document.querySelector('body').innerHTML = '<p style = ' + experimentEndStyle + '>This block is finished.<br>You can close this window.</p>';
+			}
+		});
+
+	</script>
+</html>
