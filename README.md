@@ -1,6 +1,6 @@
 # Listen-And-Repeat
 Website built in javascript using the jsPsych library to present audio files one at a time.
-A running example of the most recent version of this script can be found here: https://azrzkeyduw.cognition.run/?sequence=Demo 
+A running example of the most recent version of this script can be found here: https://jatos.boystown.org/publix/MkeV0LRBLG5
 
 This script requires:
 jsPsych 6.1, which can be downloaded here: https://github.com/jspsych/jsPsych/releases/tag/v6.1.0
